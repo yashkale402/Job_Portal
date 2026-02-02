@@ -9,22 +9,27 @@ export const register = async (req, res) => {
     const { fullname, email, phoneNumber, password, role } = req.body;
 
     if (!fullname || !email || !phoneNumber || !password || !role) {
-      return res.status(404).json({
+      return res.status(400).json({
         message: "Missing required fields",
         success: false,
       });
     }
-    const file = req.file;
-    const fileUri = getDataUri(file);
-    const cloudResponse = await cloudinary.uploader.upload(fileUri.content)
 
-    const user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({
-        message: "Email already exists",
-        success: false,
-      });
+    const file = req.file;
+
+    // Prevent duplicate email or phoneNumber
+    const existingUser = await User.findOne({ $or: [{ email }, { phoneNumber }] });
+    if (existingUser) {
+      const field = existingUser.email === email ? "Email" : "Phone number";
+      return res.status(400).json({ message: `${field} already exists`, success: false });
     }
+
+    let cloudResponse = null;
+    if (file) {
+      const fileUri = getDataUri(file);
+      cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+    }
+
     //convert passwords to hashes
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -34,21 +39,23 @@ export const register = async (req, res) => {
       phoneNumber,
       password: hashedPassword,
       role,
-      profile:{
-        profilePhoto: cloudResponse.secure_url,
-        
-
-      }
+      profile: {
+        profilePhoto: cloudResponse ? cloudResponse.secure_url : "",
+      },
     });
 
     await newUser.save();
 
-    return res.status(200).json({
+    return res.status(201).json({
       message: `Account created successfully ${fullname}`,
       success: true,
     });
   } catch (error) {
     console.error(error);
+    if (error && error.code === 11000) {
+      // duplicate key error
+      return res.status(400).json({ message: "Duplicate field value", success: false });
+    }
     res.status(500).json({
       message: "Server Error registering user",
       success: false,
