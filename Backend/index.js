@@ -44,7 +44,7 @@ app.use("/api/application", applicationRoute);
 // }
 
 app.get("/", (req, res) => {
-  req.json({ message: "Server is up and running" });
+  res.json({ message: "Server is up and running" });
 });
 
 app.listen(PORT, () => {
