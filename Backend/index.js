@@ -35,13 +35,13 @@ app.use("/api/application", applicationRoute);
 
 // ----------Code for deployment--------------
 
-if (process.env.NODE_ENV === "production") {
-  const dirpath = path.resolve();
-  app.use(express.static("./Frontend/dist"));
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(dirpath, "./Frontend/dist", "index.html"));
-  });
-}
+// if (process.env.NODE_ENV === "production") {
+//   const dirpath = path.resolve();
+//   app.use(express.static("./Frontend/dist"));
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.resolve(dirpath, "./Frontend/dist", "index.html"));
+//   });
+// }
 
 app.listen(PORT, () => {
   connectDB();
